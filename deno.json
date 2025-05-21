@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "importMap": "import_map.json",
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run --env src/main.ts",
+    "start": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run --env src/main.ts"
+  },
+  "lock": false,
+  "nodeModulesDir": "auto"
+}
