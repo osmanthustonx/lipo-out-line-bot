@@ -1,55 +1,30 @@
-import { OpenAIError } from '../utils/error.ts';
+import { OpenAI } from 'openai';
 
 export class OpenAIClient {
-  private baseUrl = 'https://api.openai.com/v1';
-  private apiKey: string;
+  private client: OpenAI;
 
   constructor(apiKey: string) {
-    this.apiKey = apiKey;
-  }
-
-  private async request(path: string, options: RequestInit = {}): Promise<Response> {
-    const url = `${this.baseUrl}${path}`;
-    const headers = {
-      'Authorization': `Bearer ${this.apiKey}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new OpenAIError(`OpenAI API error: ${response.statusText}`, response.status);
-      }
-
-      return response;
-    } catch (error) {
-      if (error instanceof OpenAIError) {
-        throw error;
-      }
-      throw new OpenAIError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    this.client = new OpenAI({
+      apiKey: apiKey
+    });
   }
 
   async createChatCompletion(options: {
     model: string;
     messages: Array<{
       role: 'system' | 'user' | 'assistant';
-      content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
+      content: string;
     }>;
     temperature?: number;
     max_tokens?: number;
-    response_format?: { type: string };
   }) {
-    const response = await this.request('/chat/completions', {
-      method: 'POST',
-      body: JSON.stringify(options),
+    const completion = await this.client.chat.completions.create({
+      model: options.model,
+      messages: options.messages,
+      temperature: options.temperature,
+      max_tokens: options.max_tokens
     });
 
-    return response.json();
+    return completion;
   }
 }

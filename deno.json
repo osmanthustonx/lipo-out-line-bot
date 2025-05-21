@@ -2,9 +2,10 @@
   "compilerOptions": {
     "allowJs": true,
     "lib": ["deno.window"],
-    "strict": true
+    "strict": true,
+    "jsx": "react-jsx"
   },
-  "importMap": "import_map.json",
+  "importMap": "./import_map.json",
   "tasks": {
     "dev": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run --env src/main.ts",
     "start": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run --env src/main.ts"

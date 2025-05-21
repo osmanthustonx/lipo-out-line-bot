@@ -1,90 +1,51 @@
-import { LineConfig, LineProfile } from '../types/line.ts';
-import { LineApiError } from '../utils/error.ts';
+import { messagingApi, validateSignature, ClientConfig } from '@line/bot-sdk';
 
 export class LineClient {
-  private baseUrl = 'https://api.line.me/v2/bot';
-  private config: LineConfig;
+  #client: messagingApi.MessagingApiClient;
+  #config: Required<ClientConfig>;
+  #baseUrl = 'https://api-data.line.me/v2/bot';
 
-  constructor(config: LineConfig) {
-    this.config = config;
-  }
-
-  private async request(path: string, options: RequestInit = {}): Promise<Response> {
-    const url = `${this.baseUrl}${path}`;
-    const headers = {
-      'Authorization': `Bearer ${this.config.channelAccessToken}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new LineApiError(`LINE API error: ${response.statusText}`, response.status);
-      }
-
-      return response;
-    } catch (error) {
-      if (error instanceof LineApiError) {
-        throw error;
-      }
-      const err = error as Error;
-      throw new LineApiError(`Network error: ${err.message}`);
+  constructor(config: ClientConfig) {
+    if (!config.channelSecret) {
+      throw new Error('Channel secret is required');
     }
-  }
-
-  async replyMessage(replyToken: string, messages: unknown): Promise<void> {
-    await this.request('/message/reply', {
-      method: 'POST',
-      body: JSON.stringify({
-        replyToken,
-        messages: Array.isArray(messages) ? messages : [messages],
-      }),
+    this.#config = config as Required<ClientConfig>;
+    this.#client = new messagingApi.MessagingApiClient({
+      channelAccessToken: config.channelAccessToken,
     });
   }
 
-  async getProfile(userId: string): Promise<LineProfile> {
-    const response = await this.request(`/profile/${userId}`);
-    return response.json();
+  verifySignature(body: string, signature: string): boolean {
+    return validateSignature(body, this.#config.channelSecret, signature);
   }
 
-  async getMessageContent(messageId: string): Promise<Uint8Array> {
-    const response = await this.request(`/message/${messageId}/content`, {
+  async replyMessage(replyToken: string, messages: messagingApi.Message | messagingApi.Message[]): Promise<messagingApi.ReplyMessageResponse> {
+    return await this.#client.replyMessage({
+      replyToken,
+      messages: Array.isArray(messages) ? messages : [messages],
+    });
+  }
+
+  async pushMessage(to: string, messages: messagingApi.Message | messagingApi.Message[]): Promise<messagingApi.PushMessageResponse> {
+    return await this.#client.pushMessage({
+      to,
+      messages: Array.isArray(messages) ? messages : [messages],
+    });
+  }
+
+  async getProfile(userId: string): Promise<messagingApi.UserProfileResponse> {
+    return await this.#client.getProfile(userId);
+  }
+
+  async getMessageContent(messageId: string): Promise<ArrayBuffer> {
+    const response = await fetch(`${this.#baseUrl}/message/${messageId}/content`, {
       headers: {
-        'Content-Type': 'application/octet-stream',
+        Authorization: `Bearer ${this.#config.channelAccessToken}`,
       },
     });
-    return new Uint8Array(await response.arrayBuffer());
-  }
-
-  async verifySignature(body: string, signature: string): Promise<boolean> {
-    const encoder = new TextEncoder();
-    const key = encoder.encode(this.config.channelSecret);
-    const message = encoder.encode(body);
-    
-    const keyObject = await crypto.subtle.importKey(
-      'raw',
-      key,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-    
-    const signed = await crypto.subtle.sign(
-      'HMAC',
-      keyObject,
-      message
-    );
-    
-    const signatureBuffer = new Uint8Array(signed);
-    const expectedSignature = Array.from(signatureBuffer)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-    
-    return expectedSignature === signature;
+    if (!response.ok) {
+      throw new Error(`Failed to get message content: ${response.statusText}`);
+    }
+    return await response.arrayBuffer();
   }
 }

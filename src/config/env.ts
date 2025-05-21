@@ -32,3 +32,6 @@ export const getEnvConfig = (): EnvConfig => {
 
   return config;
 };
+
+
+export const envConfig = getEnvConfig();

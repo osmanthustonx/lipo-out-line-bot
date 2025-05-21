@@ -2,6 +2,8 @@
   "imports": {
     "std/": "https://deno.land/std@0.208.0/",
     "express": "npm:express@4.18.2",
-    "body-parser": "npm:body-parser@1.20.2"
+    "body-parser": "npm:body-parser@1.20.2",
+    "@line/bot-sdk": "npm:@line/bot-sdk@9.8.0",
+    "openai": "jsr:@openai/openai"
   }
 }
