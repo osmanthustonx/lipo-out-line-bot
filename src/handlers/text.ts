@@ -12,13 +12,34 @@ export async function handleTextMessage(
     if (event.type === 'message' && event.message.type === 'text') {
       const messageEvent = event as MessageEvent;
       const textMessage = messageEvent.message as TextEventMessage;
-      await handleGeneralConversation(
-        textMessage.text,
-        messageEvent.replyToken,
-        lineClient,
-        openaiClient,
-        prompt
-      );
+      const messageText = textMessage.text;
+      
+      // 檢查訊息來源類型
+      const sourceType = messageEvent.source.type;
+      
+      // 在群組或多人聊天室中，檢查訊息是否包含特定前綴
+      if (sourceType === 'group' || sourceType === 'room') {
+        // 檢查訊息是否以 'leaply' 開頭（不區分大小寫）
+        if (messageText.toLowerCase().includes('leaply')) {
+          await handleGeneralConversation(
+            messageText,
+            messageEvent.replyToken,
+            lineClient,
+            openaiClient,
+            prompt
+          );
+        }
+        // 如果不包含前綴，則不處理
+      } else {
+        // 私聊中，直接處理訊息
+        await handleGeneralConversation(
+          messageText,
+          messageEvent.replyToken,
+          lineClient,
+          openaiClient,
+          prompt
+        );
+      }
     }
   } catch (error) {
     console.error('handleTextMessage Error:', error);
@@ -34,7 +55,7 @@ async function handleGeneralConversation(
 ) {
   try {
     const completion = await openaiClient.createChatCompletion({
-      model: 'gpt-4o-2024-08-06',
+      model: 'meta-llama/llama-3.3-8b-instruct:free',
       messages: [
         {
           role: 'system',

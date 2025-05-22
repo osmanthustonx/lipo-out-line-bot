@@ -3,9 +3,10 @@ import { OpenAI } from 'openai';
 export class OpenAIClient {
   private client: OpenAI;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, baseURL: string = "https://openrouter.ai/api/v1") {
     this.client = new OpenAI({
-      apiKey: apiKey
+      baseURL,
+      apiKey
     });
   }
 
