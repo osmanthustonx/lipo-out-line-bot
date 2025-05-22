@@ -32,7 +32,7 @@ app.post('/webhook',
       const events: line.WebhookEvent[] = req.body.events;
       // 處理每個事件
       for (const event of events) {
-        await handleTextMessage(event, lineClient, openaiClient, prompts.gptAssistantPrompt_Mandarin);
+        await handleTextMessage(event, lineClient, openaiClient, prompts.leaplyAIPrompt);
       }
     } catch (error) {
       console.error('Server Error:', error);
